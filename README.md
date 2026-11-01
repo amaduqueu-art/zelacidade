@@ -425,7 +425,7 @@ npm run cf:login
 npx --yes wrangler@4 whoami
 
 # 3. Crie o projeto Pages uma única vez
-npx --yes wrangler@4 pages project create zelacidade --production-branch main
+npx --yes wrangler@4 pages project create zelacidade --production-branch main --force
 
 # 4. Gere o build com as variáveis reais do Supabase em .env.local
 npm run build
@@ -436,6 +436,11 @@ npm run deploy
 # Opcional: publicação de preview
 npm run deploy:preview
 ```
+
+> Em versões recentes do Wrangler (4.15x), `pages` é delegado ao Cloudflare
+> Workers e o comando `project create` falha com "Missing entry-point". O
+> `--force` cria o projeto diretamente no Cloudflare Pages. Use-o **apenas** na
+> criação; nos deploys seguintes, rode sem `--force`.
 
 O `wrangler.toml` já aponta `pages_build_output_dir = "out"`. As variáveis
 `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` são embutidas no
