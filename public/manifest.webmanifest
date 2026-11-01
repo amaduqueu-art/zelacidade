@@ -1,0 +1,24 @@
+{
+  "name": "ZelaCidade — zeladoria urbana",
+  "short_name": "ZelaCidade",
+  "description": "Relate problemas da sua cidade, apoie os relatos do seu bairro e acompanhe as soluções.",
+  "lang": "pt-BR",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f8fc",
+  "theme_color": "#102a47",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
