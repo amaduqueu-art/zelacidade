@@ -9,6 +9,7 @@
     "preview": "npx serve@14 out",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "validate:supabase": "node scripts/validate-supabase.mjs",
     "cf:login": "npx --yes wrangler@4 login",
     "deploy": "npm run build && npx --yes wrangler@4 pages deploy out --project-name zelacidade",
     "deploy:preview": "npm run build && npx --yes wrangler@4 pages deploy out --project-name zelacidade --branch preview"

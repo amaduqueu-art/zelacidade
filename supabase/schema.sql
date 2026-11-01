@@ -293,3 +293,6 @@ create policy "report_images_delete_own"
 -- Atualizar o status de um relato (execute no SQL Editor, como owner):
 -- update public.reports set status = 'em_analise' where id = 'UUID-DO-RELATO';
 -- update public.reports set status = 'resolvido'  where id = 'UUID-DO-RELATO';
+
+-- Garante que a API REST (PostgREST) enxergue as tabelas imediatamente.
+notify pgrst, 'reload schema';

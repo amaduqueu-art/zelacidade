@@ -115,7 +115,9 @@ zelacidade/
 │   ├── logo.svg
 │   └── manifest.webmanifest        # Metadados PWA
 ├── supabase/
-│   └── schema.sql                  # Esquema completo: tabelas, triggers, RLS e Storage
+│   ├── schema-core.sql             # Banco, triggers e RLS (sem Storage)
+│   ├── storage.sql                 # Bucket report-images + políticas
+│   └── schema.sql                  # Esquema completo em um só arquivo
 ├── src/
 │   ├── app/
 │   │   ├── globals.css             # Design tokens (azul-marinho + laranja) e utilitários
@@ -186,21 +188,29 @@ zelacidade/
    `South America (São Paulo)`).
 3. Aguarde a provisionamento do projeto.
 
-### 1.2 Executar o esquema SQL
+### 1.2 Executar o esquema do banco
 
-1. No painel do projeto, abra **SQL Editor**.
-2. Clique em **New query**.
-3. Copie todo o conteúdo de [`supabase/schema.sql`](./supabase/schema.sql).
-4. Cole e clique em **Run**.
+O esquema é dividido em dois arquivos porque, em projetos Supabase hospedados,
+o SQL Editor não é dono de `storage.objects` e a criação de políticas de
+Storage pode falhar com `must be owner of table objects`.
 
-O script é idempotente e cria:
+**Parte 1 — banco, RLS e triggers:**
+
+1. No painel do projeto, abra **SQL Editor** → **New query**.
+2. Copie todo o conteúdo de
+   [`supabase/schema-core.sql`](./supabase/schema-core.sql).
+3. Cole e clique em **Run**.
+
+Esse script é idempotente e cria:
 
 - Tipos `report_category` e `report_status`
 - Tabelas `reports` e `upvotes` (com constraints e índices)
 - Triggers de `updated_at` e do contador de apoios
-- Políticas de RLS e permissões
-- O bucket público **`report-images`** no Storage
-- Políticas de Storage para leitura pública e upload na própria pasta
+- Políticas de RLS e permissões de tabela
+
+> O arquivo [`supabase/schema.sql`](./supabase/schema.sql) contém o esquema
+> completo em um só lugar (banco + Storage). Use-o apenas se o seu projeto
+> permitir criar políticas em `storage.objects` pelo SQL Editor.
 
 **Verificação rápida** (rode no SQL Editor):
 
@@ -209,17 +219,58 @@ select tablename, rowsecurity
 from pg_tables
 where schemaname = 'public';
 
+select policyname, cmd, roles
+from pg_policies
+where schemaname = 'public'
+order by policyname;
+```
+
+### 1.3 Criar o bucket e as políticas de Storage
+
+**Opção A — pelo SQL Editor (tenta criar tudo):**
+
+1. Abra **SQL Editor** → **New query**.
+2. Copie todo o conteúdo de [`supabase/storage.sql`](./supabase/storage.sql).
+3. Cole e clique em **Run**.
+
+O script cria o bucket público `report-images` (8 MB, `image/jpeg`,
+`image/png`, `image/webp`) e as 4 políticas. Se aparecer o aviso
+`POLÍTICAS DE STORAGE NÃO CRIADAS`, use a Opção B apenas para as políticas.
+
+**Opção B — pelo Dashboard (sempre funciona):**
+
+1. **Storage** → **New bucket**.
+2. Nome: `report-images`; marque **Public bucket**.
+3. **File size limit**: `8 MB`.
+4. **Allowed MIME types**: `image/jpeg`, `image/png`, `image/webp`.
+5. Confirme.
+6. Abra **Storage** → **Policies** → **New policy** →
+   **For full customization** e crie:
+
+| Política | Comando | Role | Expressão |
+|---|---|---|---|
+| `report_images_select_public` | SELECT | public | `bucket_id = 'report-images'` |
+| `report_images_insert_own` | INSERT | authenticated | `bucket_id = 'report-images' and (storage.foldername(name))[1] = auth.uid()::text` |
+| `report_images_update_own` | UPDATE | authenticated | a mesma expressão (USING e WITH CHECK) |
+| `report_images_delete_own` | DELETE | authenticated | a mesma expressão (USING) |
+
+**Verificação** (SQL Editor):
+
+```sql
 select id, public, file_size_limit, allowed_mime_types
 from storage.buckets
 where id = 'report-images';
 
 select policyname, cmd, roles
 from pg_policies
-where schemaname in ('public', 'storage')
-order by schemaname, policyname;
+where schemaname = 'storage' and tablename = 'objects';
 ```
 
-### 1.3 Habilitar o login anônimo (obrigatório)
+**Convenção de caminho:** `report-images/<user_id>/<report_id>/foto-<timestamp>.jpg`.
+A política de `INSERT` valida que a primeira pasta é o `auth.uid()`, impedindo
+que um usuário envie arquivos na pasta de outro.
+
+### 1.4 Habilitar o login anônimo (obrigatório)
 
 O app usa sessões anônimas para permitir publicar e apoiar sem cadastro.
 
@@ -230,25 +281,6 @@ O app usa sessões anônimas para permitir publicar e apoiar sem cadastro.
 
 > Sem isso, o app exibe "Não foi possível iniciar uma sessão" e as escritas
 > falham com erro de autenticação. A leitura do feed continua funcionando.
-
-### 1.4 Criar/verificar o bucket de imagens
-
-O script SQL já cria o bucket `report-images` como **público**, com limite de
-**8 MB** e MIME types `image/jpeg`, `image/png` e `image/webp`.
-
-Se preferir criar manualmente:
-
-1. Vá em **Storage** → **New bucket**.
-2. Nome: `report-images`.
-3. Marque **Public bucket**.
-4. Em **File size limit**, defina `8 MB`.
-5. Em **Allowed MIME types**, adicione `image/jpeg`, `image/png` e
-   `image/webp`.
-6. Confirme. As políticas de acesso já foram criadas pelo `schema.sql`.
-
-**Convenção de caminho:** `report-images/<user_id>/<report_id>/foto-<timestamp>.jpg`.
-A política de `INSERT` valida que a primeira pasta é o `auth.uid()`, impedindo
-que um usuário envie arquivos na pasta de outro.
 
 ### 1.5 Copiar as credenciais
 
@@ -412,8 +444,8 @@ build estático; portanto, precisam estar no `.env.local` **antes** do
 
 ### 3.7 Checklist de deploy
 
-- [ ] `supabase/schema.sql` executado sem erros
-- [ ] Bucket `report-images` existe e é público
+- [ ] `supabase/schema-core.sql` executado sem erros
+- [ ] Bucket `report-images` existe e é público (e as 4 políticas de Storage)
 - [ ] **Anonymous sign-ins** habilitado
 - [ ] Variáveis do Supabase configuradas no Cloudflare Pages
 - [ ] Build command `npm run build` e output `out`
@@ -537,7 +569,8 @@ O roadmap abaixo já prevê essa evolução.
 | --- | --- | --- |
 | "Não foi possível iniciar uma sessão" | Login anônimo desabilitado | Ative **Anonymous sign-ins** no Supabase |
 | Feed vazio com erro | `.env.local` ausente/inválido | Confira URL e chave `anon`; reinicie o dev server |
-| Upload retorna 400/403 | Bucket ou política ausente | Reexecute `supabase/schema.sql`; confira `report-images` |
+| Upload retorna 400/403 | Bucket ou política ausente | Rode `supabase/storage.sql` ou crie o bucket/políticas pelo Dashboard |
+| `must be owner of table objects` no SQL Editor | `postgres` não é dono de `storage.objects` | Use `schema-core.sql` + `storage.sql` (ou as políticas pelo Dashboard) |
 | Imagem não aparece | CSP bloqueando o domínio | Ajuste `img-src` em `public/_headers` |
 | 404 ao abrir `/relato/?id=...` direto | Rota não exportada | Confirme `trailingSlash: true` e a pasta `out/relato/index.html` |
 | Variáveis novas não funcionam | Build estático já gerou o bundle | Refaça o deploy no Cloudflare Pages |
