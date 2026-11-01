@@ -8,6 +8,9 @@ solicitação.
 > Projeto full-stack com impacto social, construído com Next.js 14 (App Router),
 > TypeScript, Tailwind CSS, Shadcn UI, Lucide Icons e Supabase.
 
+**Produção:** https://zelacidade.pages.dev
+**Código:** https://github.com/amaduqueu-art/zelacidade
+
 ---
 
 ## Sumário
