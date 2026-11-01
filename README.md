@@ -376,6 +376,14 @@ git push -u origin main
    NEXT_PUBLIC_SUPABASE_ANON_KEY = sua-chave-anon-publica
    ```
 
+   > **Importante:** em builds feitos pelo Cloudflare, o `next build` às vezes
+   > não enxerga as variáveis cadastradas no painel. Por isso o projeto também
+   > versiona o arquivo [`.env.production`](./.env.production) com a URL e a
+   > *publishable key* do Supabase. Esses dois valores são públicos por design
+   > (a segurança fica nas políticas de RLS) e o `next build` os inlina no
+   > bundle automaticamente. Se trocar de projeto Supabase, atualize esse
+   > arquivo **e** as variáveis do painel.
+
 6. Clique em **Save and Deploy**.
 
 O Cloudflare Pages executa `npm install` + `npm run build`, publica `out/` e
