@@ -455,15 +455,20 @@ npm run deploy:preview
 
 O `wrangler.toml` já aponta `pages_build_output_dir = "out"`. As variáveis
 `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` são embutidas no
-build estático; portanto, precisam estar no `.env.local` **antes** do
-`npm run build` neste modo.
+build estático; portanto, precisam estar no `.env.production` (ou `.env.local`)
+**antes** do `npm run build` neste modo.
+
+> **Atenção:** o Cloudflare não permite upload direto (`wrangler pages deploy`)
+> em um projeto que já está conectado ao Git. Se o projeto foi criado pela
+> seção 3.2, publique apenas com `git push` na `main`. Para voltar ao modo
+> manual seria necessário criar um projeto novo de *Direct Upload*.
 
 ### 3.7 Checklist de deploy
 
 - [ ] `supabase/schema-core.sql` executado sem erros
 - [ ] Bucket `report-images` existe e é público (e as 4 políticas de Storage)
 - [ ] **Anonymous sign-ins** habilitado
-- [ ] Variáveis do Supabase configuradas no Cloudflare Pages
+- [ ] Variáveis do Supabase no `.env.production` (e no painel do Cloudflare)
 - [ ] Build command `npm run build` e output `out`
 - [ ] `NODE_VERSION=20`
 - [ ] Deploy concluído e feed carregando
