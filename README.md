@@ -379,7 +379,38 @@ aplicado pelo Cloudflare Pages:
 > `api.minhacidade.com`), adicione-o em `img-src` e `connect-src` no
 > `public/_headers` e refaça o deploy.
 
-### 3.6 Checklist de deploy
+### 3.6 Deploy direto via Wrangler (alternativa)
+
+Se você não quiser conectar o repositório pelo dashboard, é possível publicar o
+static export diretamente. Este caminho **não** cria CI/CD automático por push;
+para isso, prefira a integração Git da seção 3.2.
+
+```bash
+# 1. Autentique no Cloudflare (abre o navegador)
+npm run cf:login
+
+# 2. Confirme a conta autenticada
+npx --yes wrangler@4 whoami
+
+# 3. Crie o projeto Pages uma única vez
+npx --yes wrangler@4 pages project create zelacidade --production-branch main
+
+# 4. Gere o build com as variáveis reais do Supabase em .env.local
+npm run build
+
+# 5. Publique (produção)
+npm run deploy
+
+# Opcional: publicação de preview
+npm run deploy:preview
+```
+
+O `wrangler.toml` já aponta `pages_build_output_dir = "out"`. As variáveis
+`NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` são embutidas no
+build estático; portanto, precisam estar no `.env.local` **antes** do
+`npm run build` neste modo.
+
+### 3.7 Checklist de deploy
 
 - [ ] `supabase/schema.sql` executado sem erros
 - [ ] Bucket `report-images` existe e é público

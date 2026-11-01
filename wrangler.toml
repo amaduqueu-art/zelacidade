@@ -1,0 +1,7 @@
+# Configuração do Cloudflare Pages para deploy direto via Wrangler.
+# A integração Git do Cloudflare Pages (recomendada para CI/CD) não usa este
+# arquivo: as configurações ficam no dashboard. Ele serve para o comando
+# `npm run deploy`, que publica o static export de `out/`.
+name = "zelacidade"
+compatibility_date = "2026-11-01"
+pages_build_output_dir = "out"
